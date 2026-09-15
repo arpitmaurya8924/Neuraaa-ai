@@ -78,6 +78,8 @@ jobs:
           echo "Temporary debug keystore verified."
 
       - name: Build debug APK
+        env:
+          NEURA_BACKEND_URL: ${{ secrets.NEURA_BACKEND_URL }}
         run: gradle :app:assembleDebug --stacktrace --no-daemon
 
       - name: Verify debug APK
