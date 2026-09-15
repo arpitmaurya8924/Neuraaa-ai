@@ -1,0 +1,6 @@
+{
+  "name": "NEURA",
+  "description": "NEURA — Your Intelligent Companion. A modern, futuristic AI assistant supporting English, Hindi, and Hinglish with Study, Coding, Vision, and AI Tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

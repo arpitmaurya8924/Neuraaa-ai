@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Glowing outer aura -->
+    <path
+        android:pathData="M54,26 L78,54 L54,82 L30,54 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="30"
+                android:startY="26"
+                android:endX="78"
+                android:endY="82"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#3300F5D4" />
+                <item android:offset="0.5" android:color="#448B5CF6" />
+                <item android:offset="1.0" android:color="#226366F1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Outer diamond neural perimeter -->
+    <path
+        android:pathData="M54,28 L80,54 L54,80 L28,54 Z"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:startX="28"
+                android:startY="28"
+                android:endX="80"
+                android:endY="80"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#00F5D4" />
+                <item android:offset="0.5" android:color="#A78BFA" />
+                <item android:offset="1.0" android:color="#6366F1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Synaptic cross and core -->
+    <path
+        android:pathData="M54,36 L54,72 M36,54 L72,54"
+        android:strokeWidth="2.0"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:startX="36"
+                android:startY="36"
+                android:endX="72"
+                android:endY="72"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#00F5D4" />
+                <item android:offset="1.0" android:color="#C084FC" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Central AI Core spark -->
+    <path
+        android:pathData="M54,45 C54,50 50,54 45,54 C50,54 54,58 54,63 C54,58 58,54 63,54 C58,54 54,50 54,45 Z"
+        android:fillColor="#FFFFFF" />
+    <!-- 4 Synaptic Nodes -->
+    <path
+        android:pathData="M54,28 A2,2 0 1,1 54,28.01"
+        android:strokeWidth="4"
+        android:strokeColor="#00F5D4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M80,54 A2,2 0 1,1 80,54.01"
+        android:strokeWidth="4"
+        android:strokeColor="#A78BFA"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M54,80 A2,2 0 1,1 54,80.01"
+        android:strokeWidth="4"
+        android:strokeColor="#6366F1"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M28,54 A2,2 0 1,1 28,54.01"
+        android:strokeWidth="4"
+        android:strokeColor="#00F5D4"
+        android:strokeLineCap="round" />
+</vector>
