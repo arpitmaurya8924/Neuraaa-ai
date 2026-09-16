@@ -21,8 +21,10 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    val envGeminiKey = System.getenv("GEMINI_API_KEY") ?: ""
-    buildConfigField("String", "ENV_GEMINI_API_KEY", "\"$envGeminiKey\"")
+    // Public backend URL only; provider API keys stay on the server.
+    val backendUrl = System.getenv("NEURA_BACKEND_URL")
+      ?: "https://neura-backend-1.onrender.com/"
+    buildConfigField("String", "NEURA_BACKEND_URL", "\"$backendUrl\"")
   }
 
   signingConfigs {
