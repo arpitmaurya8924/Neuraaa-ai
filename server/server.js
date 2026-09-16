@@ -22,8 +22,7 @@ import http from 'node:http';
 import { URL } from 'node:url';
 
 const PORT = process.env.PORT || 3001;
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
-const FALLBACK_MODEL = 'gemini-3.6-flash';
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
 // Gemini API base URL
 const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
@@ -58,7 +57,6 @@ const server = http.createServer(async (req, res) => {
       service: 'NEURA AI Backend API',
       status: 'healthy',
       model: DEFAULT_MODEL,
-      fallbackModel: FALLBACK_MODEL,
       apiKeyConfigured,
       environment: process.env.NODE_ENV || 'production'
     }));
@@ -215,6 +213,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`[NEURA] Secure AI Backend Server running on port ${PORT}`);
-  console.log(`[NEURA] Model: ${DEFAULT_MODEL} | Fallback: ${FALLBACK_MODEL}`);
+  console.log(`[NEURA] Gemini model: ${DEFAULT_MODEL}`);
   console.log(`[NEURA] Gemini API Key configured: ${Boolean(getApiKey())}`);
 });
