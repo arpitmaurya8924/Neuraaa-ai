@@ -25,6 +25,14 @@ android {
     val backendUrl = System.getenv("NEURA_BACKEND_URL")
       ?: "https://neura-backend-1.onrender.com/"
     buildConfigField("String", "NEURA_BACKEND_URL", "\"$backendUrl\"")
+
+    // TEMPORARY (private/local testing only — do NOT ship this to Play Store):
+    // OpenAI key is bundled directly into the APK so the app can call
+    // OpenAI without going through the backend server. Set OPENAI_API_KEY
+    // as a local environment variable before building (or in a gitignored
+    // .env file if you wire it through the secrets plugin).
+    val openAiKey = System.getenv("OPENAI_API_KEY") ?: "OPENAI_API_KEY_NOT_SET"
+    buildConfigField("String", "OPENAI_API_KEY", "\"$openAiKey\"")
   }
 
   signingConfigs {
