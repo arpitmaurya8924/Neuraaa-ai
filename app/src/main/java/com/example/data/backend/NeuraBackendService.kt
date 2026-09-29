@@ -21,16 +21,24 @@ import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
 /**
- * Client-side proxy for the NEURA backend.
+ * Client-side OpenAI caller.
  *
- * Android app -> NEURA backend -> BazaarLink/Gemini -> Android app
+ * ⚠️ TEMPORARY / PRIVATE-TESTING SETUP ONLY:
+ * Android app -> OpenAI API (directly)
  *
- * Provider API keys NEVER live in the Android APK.
+ * The OpenAI API key is bundled inside the built APK (BuildConfig.OPENAI_API_KEY).
+ * Anyone who has the APK file can extract this key. This is fine for your own
+ * device / testing, but do NOT publish this build anywhere public (Play Store,
+ * APK sharing sites, GitHub release, etc.) while the key is embedded this way.
+ * Before any public release, move this call back behind a backend server so
+ * the key never ships inside the app.
  */
 class NeuraBackendService(private val context: Context) {
 
-    private val baseUrl: String
-        get() = BuildConfig.NEURA_BACKEND_URL.trim().trimEnd('/')
+    private val apiKey: String
+        get() = BuildConfig.OPENAI_API_KEY
+
+    private val model = "gpt-5-mini"
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -39,7 +47,7 @@ class NeuraBackendService(private val context: Context) {
         .build()
 
     fun isBackendConfigured(): Boolean =
-        baseUrl.startsWith("https://") && !baseUrl.contains("YOUR-NEURA-BACKEND")
+        apiKey.isNotBlank() && apiKey != "OPENAI_API_KEY_NOT_SET"
 
     fun isNetworkAvailable(): Boolean {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
@@ -49,35 +57,33 @@ class NeuraBackendService(private val context: Context) {
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
-    private fun buildPayload(
+    private fun buildMessages(
         conversationHistory: List<Pair<String, String>>,
         userPrompt: String,
-        imageBase64: String?,
-        systemInstruction: String,
-        mode: String,
-        maxTokens: Int
-    ): String {
-        val history = JSONArray()
+        systemInstruction: String
+    ): JSONArray {
+        val messages = JSONArray()
+        messages.put(JSONObject().apply {
+            put("role", "system")
+            put("content", systemInstruction)
+        })
         conversationHistory.takeLast(16).forEach { (role, content) ->
-            history.put(JSONObject().apply {
+            messages.put(JSONObject().apply {
                 put("role", if (role.equals("assistant", true) || role.equals("model", true)) "assistant" else "user")
                 put("content", content)
             })
         }
-
-        return JSONObject().apply {
-            put("prompt", userPrompt)
-            put("conversationHistory", history)
-            put("systemInstruction", systemInstruction)
-            put("mode", mode)
-            put("maxTokens", maxTokens)
-            if (!imageBase64.isNullOrBlank()) put("imageBase64", imageBase64)
-        }.toString()
+        messages.put(JSONObject().apply {
+            put("role", "user")
+            put("content", userPrompt)
+        })
+        return messages
     }
 
     /**
-     * Streams normalized SSE from /api/chat/stream.
-     * The backend owns BazaarLink/Gemini credentials and provider selection.
+     * Streams the OpenAI response chunk-by-chunk using OpenAI's own SSE format
+     * (each line is `data: {"choices":[{"delta":{"content":"..."}}]}`, ending
+     * with `data: [DONE]`).
      */
     fun streamChatResponse(
         conversationHistory: List<Pair<String, String>>,
@@ -93,17 +99,21 @@ class NeuraBackendService(private val context: Context) {
         }
 
         if (!isBackendConfigured()) {
-            emit("⚠️ **NEURA Backend Configuration Required**: Backend URL is not configured.")
+            emit("⚠️ **OpenAI Not Configured**: OPENAI_API_KEY was not set at build time.")
             return@flow
         }
 
-        val payload = buildPayload(
-            conversationHistory, userPrompt, imageBase64,
-            systemInstruction, mode, maxTokens
-        )
+        val payload = JSONObject().apply {
+            put("model", model)
+            put("messages", buildMessages(conversationHistory, userPrompt, systemInstruction))
+            put("max_completion_tokens", maxTokens)
+            put("temperature", 0.7)
+            put("stream", true)
+        }.toString()
 
         val request = Request.Builder()
-            .url("$baseUrl/api/chat/stream")
+            .url("https://api.openai.com/v1/chat/completions")
+            .addHeader("Authorization", "Bearer $apiKey")
             .post(payload.toRequestBody("application/json; charset=utf-8".toMediaType()))
             .header("Accept", "text/event-stream")
             .header("Cache-Control", "no-cache")
@@ -113,13 +123,13 @@ class NeuraBackendService(private val context: Context) {
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     val body = response.body?.string().orEmpty()
-                    emit("⚠️ **NEURA Backend Error (${response.code})**: ${extractError(body)}")
+                    emit("⚠️ **OpenAI Error (${response.code})**: ${extractError(body)}")
                     return@use
                 }
 
                 val source = response.body?.source()
                 if (source == null) {
-                    emit("⚠️ **NEURA Backend Error**: Empty response.")
+                    emit("⚠️ **OpenAI Error**: Empty response.")
                     return@use
                 }
 
@@ -132,10 +142,10 @@ class NeuraBackendService(private val context: Context) {
 
                     try {
                         val obj = JSONObject(raw)
-                        val text = obj.optString("text", "")
-                        val error = obj.optString("error", "")
+                        val choices = obj.optJSONArray("choices")
+                        val delta = choices?.optJSONObject(0)?.optJSONObject("delta")
+                        val text = delta?.optString("content", "") ?: ""
                         if (text.isNotEmpty()) emit(text)
-                        if (error.isNotEmpty()) emit("⚠️ **NEURA Backend Error**: $error")
                     } catch (_: Exception) {
                         // Ignore malformed/partial SSE frames.
                     }
@@ -153,14 +163,18 @@ class NeuraBackendService(private val context: Context) {
         maxTokens: Int = 1000
     ): String = withContext(Dispatchers.IO) {
         if (!isNetworkAvailable()) return@withContext "⚠️ Network unavailable."
-        if (!isBackendConfigured()) return@withContext "⚠️ NEURA backend is not configured."
+        if (!isBackendConfigured()) return@withContext "⚠️ OpenAI is not configured (OPENAI_API_KEY not set at build time)."
 
-        val payload = buildPayload(
-            emptyList(), prompt, null, systemInstruction, mode, maxTokens
-        )
+        val payload = JSONObject().apply {
+            put("model", model)
+            put("messages", buildMessages(emptyList(), prompt, systemInstruction))
+            put("max_completion_tokens", maxTokens)
+            put("temperature", 0.7)
+        }.toString()
 
         val request = Request.Builder()
-            .url("$baseUrl/api/chat")
+            .url("https://api.openai.com/v1/chat/completions")
+            .addHeader("Authorization", "Bearer $apiKey")
             .post(payload.toRequestBody("application/json; charset=utf-8".toMediaType()))
             .header("Accept", "application/json")
             .build()
@@ -169,9 +183,11 @@ class NeuraBackendService(private val context: Context) {
             httpClient.newCall(request).execute().use { response ->
                 val body = response.body?.string().orEmpty()
                 if (!response.isSuccessful) {
-                    "⚠️ **NEURA Backend Error (${response.code})**: ${extractError(body)}"
+                    "⚠️ **OpenAI Error (${response.code})**: ${extractError(body)}"
                 } else {
-                    JSONObject(body).optString("response", "No response generated.")
+                    val choices = JSONObject(body).optJSONArray("choices")
+                    val message = choices?.optJSONObject(0)?.optJSONObject("message")
+                    message?.optString("content", "No response generated.") ?: "No response generated."
                 }
             }
         } catch (ex: Exception) {
@@ -181,15 +197,16 @@ class NeuraBackendService(private val context: Context) {
 
     private fun extractError(body: String): String {
         return try {
-            JSONObject(body).optString("error", body.ifBlank { "Unknown backend error." })
+            JSONObject(body).optJSONObject("error")?.optString("message")
+                ?: body.ifBlank { "Unknown OpenAI error." }
         } catch (_: Exception) {
-            body.ifBlank { "Unknown backend error." }.take(500)
+            body.ifBlank { "Unknown OpenAI error." }.take(500)
         }
     }
 
     private fun friendlyError(ex: Exception): String = when (ex) {
         is SocketTimeoutException -> "Request timed out. Please try again."
-        is UnknownHostException -> "Cannot reach the NEURA backend. Check your internet connection."
+        is UnknownHostException -> "Cannot reach OpenAI. Check your internet connection."
         is IOException -> "Network communication failed."
         else -> ex.message ?: "Unexpected error."
     }
