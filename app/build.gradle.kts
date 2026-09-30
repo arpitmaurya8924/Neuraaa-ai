@@ -32,6 +32,12 @@ android {
     // GEMINI_API_KEY as a local environment variable before building.
     val geminiKey = System.getenv("GEMINI_API_KEY") ?: "GEMINI_API_KEY_NOT_SET"
     buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
+
+    // DIAGNOSTIC (safe to remove later): prints ONLY whether the key was
+    // received by the build — never the key itself — so you can check the
+    // GitHub Actions log for the "Build debug APK" step to confirm.
+    println("[NEURA DIAGNOSTIC] GEMINI_API_KEY received by build: ${geminiKey != "GEMINI_API_KEY_NOT_SET"}")
+    println("[NEURA DIAGNOSTIC] GEMINI_API_KEY length: ${geminiKey.length}")
   }
 
   signingConfigs {
