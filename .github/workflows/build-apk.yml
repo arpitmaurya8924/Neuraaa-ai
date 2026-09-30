@@ -80,7 +80,7 @@ jobs:
       - name: Build debug APK
         env:
           NEURA_BACKEND_URL: ${{ secrets.NEURA_BACKEND_URL }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: gradle :app:assembleDebug --stacktrace --no-daemon
 
       - name: Verify debug APK
