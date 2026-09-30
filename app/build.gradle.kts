@@ -27,12 +27,11 @@ android {
     buildConfigField("String", "NEURA_BACKEND_URL", "\"$backendUrl\"")
 
     // TEMPORARY (private/local testing only — do NOT ship this to Play Store):
-    // OpenAI key is bundled directly into the APK so the app can call
-    // OpenAI without going through the backend server. Set OPENAI_API_KEY
-    // as a local environment variable before building (or in a gitignored
-    // .env file if you wire it through the secrets plugin).
-    val openAiKey = System.getenv("OPENAI_API_KEY") ?: "OPENAI_API_KEY_NOT_SET"
-    buildConfigField("String", "OPENAI_API_KEY", "\"$openAiKey\"")
+    // Gemini key is bundled directly into the APK so the app can call
+    // Gemini's free tier without going through the backend server. Set
+    // GEMINI_API_KEY as a local environment variable before building.
+    val geminiKey = System.getenv("GEMINI_API_KEY") ?: "GEMINI_API_KEY_NOT_SET"
+    buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
   }
 
   signingConfigs {
